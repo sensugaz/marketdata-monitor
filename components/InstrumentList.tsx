@@ -168,12 +168,13 @@ export function InstrumentList() {
               <TableHead rowSpan={2}>Symbol</TableHead>
               <TableHead rowSpan={2}>Name</TableHead>
               <TableHead rowSpan={2}>Status</TableHead>
-              <TableHead colSpan={4} className="text-center border-l">PI Financial</TableHead>
+              <TableHead colSpan={5} className="text-center border-l border-gray-200">PI Financial</TableHead>
             </TableRow>
             <TableRow>
-              <TableHead className="text-right border-l">Bid</TableHead>
+              <TableHead className="text-right border-l border-gray-200">Bid</TableHead>
               <TableHead className="text-right">Ask</TableHead>
               <TableHead className="text-right">Price</TableHead>
+              <TableHead className="text-right">Volume</TableHead>
               <TableHead className="text-right">Change %</TableHead>
             </TableRow>
           </TableHeader>
@@ -193,8 +194,8 @@ export function InstrumentList() {
               const bestBid = piData?.orderBook?.bid?.[0]?.[0] || '-';
               const bestAsk = piData?.orderBook?.offer?.[0]?.[0] || '-';
 
-              // Colors
-              const piChangeColor = piChangeRate >= 0 ? 'text-green-600' : 'text-red-600';
+              // Colors using custom RGB values
+              const piChangeColor = piChangeRate >= 0 ? '[color:rgb(34,197,94)]' : '[color:rgb(220,38,38)]';
 
               const key = instrument.symbol;
 
@@ -206,17 +207,26 @@ export function InstrumentList() {
                 ? '↓'
                 : '';
               const arrowColor = priceEffect === 'up'
-                ? 'text-green-600'
+                ? '[color:rgb(34,197,94)]'
                 : priceEffect === 'down'
-                ? 'text-red-600'
+                ? '[color:rgb(220,38,38)]'
                 : '';
 
               // Flash background color based on direction
               const flashBgColor = flashingCells[key]
                 ? priceEffect === 'up'
-                  ? 'bg-green-100'
-                  : 'bg-red-100'
+                  ? '[background-color:rgba(34,197,94,0.1)]'
+                  : '[background-color:rgba(220,38,38,0.1)]'
                 : '';
+
+              // Volume formatting
+              const volume = piData?.totalVolume || instrument.totalVolume || '0';
+              const volumeNumber = parseFloat(volume);
+              const volumeFormatted = volumeNumber >= 1000000
+                ? `${(volumeNumber / 1000000).toFixed(2)}M`
+                : volumeNumber >= 1000
+                ? `${(volumeNumber / 1000).toFixed(2)}K`
+                : volumeNumber.toFixed(0);
 
               return (
                 <TableRow
@@ -250,7 +260,7 @@ export function InstrumentList() {
                   </TableCell>
 
                   {/* PI Financial Bid */}
-                  <TableCell className="text-right font-semibold border-l">
+                  <TableCell className="text-right font-semibold border-l border-gray-200">
                     {bestBid !== '-' ? `$${parseFloat(bestBid).toFixed(2)}` : '-'}
                   </TableCell>
 
@@ -269,6 +279,11 @@ export function InstrumentList() {
                         </span>
                       )}
                     </span>
+                  </TableCell>
+
+                  {/* PI Financial Volume */}
+                  <TableCell className="text-right font-semibold">
+                    {volumeFormatted}
                   </TableCell>
 
                   {/* PI Financial Change % */}
