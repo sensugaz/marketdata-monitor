@@ -10,8 +10,8 @@ const PING_INTERVAL = 30000;
 
 export function usePIFinancialWebSocket() {
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
-  const pingIntervalRef = useRef<NodeJS.Timeout>();
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const pingIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const connectTimeRef = useRef<number>(0);
 
   const {

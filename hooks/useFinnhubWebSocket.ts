@@ -13,7 +13,7 @@ const RECONNECT_DELAY = 3000;
 
 export function useFinnhubWebSocket() {
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const connectTimeRef = useRef<number>(0);
 
   const {
