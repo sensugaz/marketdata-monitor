@@ -15,9 +15,10 @@ export function useFinnhubWebSocket() {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const connectTimeRef = useRef<number>(0);
+  const subscribedSymbolsRef = useRef<Set<string>>(new Set());
 
   const {
-    watchedSymbols,
+    displayedSymbols,
     updateMarketData: updateStoreData,
     setFinnhubConnection: setConnectionState,
     addLog,
@@ -39,31 +40,36 @@ export function useFinnhubWebSocket() {
     }
   }, [addLog]);
 
-  const subscribe = useCallback((symbol?: string) => {
-    if (symbol) {
-      // Subscribe to a single symbol
+  const subscribe = useCallback((symbols: { symbol: string; market: string }[]) => {
+    if (symbols.length === 0) return;
+
+    // Filter out already subscribed symbols
+    const newSymbols = symbols.filter(
+      (s) => !subscribedSymbolsRef.current.has(s.symbol)
+    );
+
+    if (newSymbols.length === 0) return;
+
+    // Subscribe to each new symbol
+    newSymbols.forEach(sym => {
       const subscribeMessage = {
         type: 'subscribe',
-        symbol: symbol,
+        symbol: sym.symbol,
       };
       sendMessage(subscribeMessage);
-    } else {
-      // Subscribe to all watched symbols
-      watchedSymbols.forEach(sym => {
-        const subscribeMessage = {
-          type: 'subscribe',
-          symbol: sym.symbol,
-        };
-        sendMessage(subscribeMessage);
-      });
-    }
-  }, [watchedSymbols, sendMessage]);
+
+      // Mark as subscribed
+      subscribedSymbolsRef.current.add(sym.symbol);
+    });
+  }, [sendMessage]);
 
   const unsubscribe = useCallback(() => {
-    watchedSymbols.forEach(sym => {
-      sendMessage({ type: 'unsubscribe', symbol: sym.symbol });
+    // Unsubscribe from all subscribed symbols
+    subscribedSymbolsRef.current.forEach(symbol => {
+      sendMessage({ type: 'unsubscribe', symbol });
     });
-  }, [watchedSymbols, sendMessage]);
+    subscribedSymbolsRef.current.clear();
+  }, [sendMessage]);
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -98,8 +104,8 @@ export function useFinnhubWebSocket() {
           message: '[Finnhub] WebSocket connected successfully',
         });
 
-        // Subscribe to symbols
-        subscribe();
+        // Subscribe to displayed symbols
+        subscribe(displayedSymbols);
       };
 
       ws.onmessage = (event) => {
@@ -276,7 +282,7 @@ export function useFinnhubWebSocket() {
       });
       setConnectionState({ status: 'error' });
     }
-  }, [subscribe, sendMessage, setConnectionState, addLog, updateStoreData, updateStats, stats, watchedSymbols]);
+  }, [subscribe, sendMessage, setConnectionState, addLog, updateStoreData, updateStats, stats, displayedSymbols]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -289,21 +295,21 @@ export function useFinnhubWebSocket() {
     }
   }, [unsubscribe]);
 
-  // Auto-connect on mount
-  useEffect(() => {
-    connect();
+  // Don't auto-connect by default - user must manually connect via UI
+  // useEffect(() => {
+  //   connect();
 
-    return () => {
-      disconnect();
-    };
-  }, []);
+  //   return () => {
+  //     disconnect();
+  //   };
+  // }, []);
 
-  // Subscribe to new symbols when they change
+  // Subscribe to new symbols when displayed symbols change
   useEffect(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      subscribe();
+    if (wsRef.current?.readyState === WebSocket.OPEN && displayedSymbols.length > 0) {
+      subscribe(displayedSymbols);
     }
-  }, [watchedSymbols, subscribe]);
+  }, [displayedSymbols, subscribe]);
 
   return {
     connect,

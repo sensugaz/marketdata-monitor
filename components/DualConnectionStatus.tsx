@@ -1,6 +1,9 @@
 'use client';
 
 import { useMarketStore } from '@/store/marketStore';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 interface DualConnectionStatusProps {
   onReconnectPI: () => void;
@@ -42,14 +45,20 @@ export function DualConnectionStatus({
     connection: typeof piFinancialConnection,
     isConnected: boolean,
     onReconnect: () => void,
-    onDisconnect: () => void,
-    bgColor: string
+    onDisconnect: () => void
   ) => {
-    return (
-      <div className={`${bgColor} rounded-lg border p-4`}>
-        <h3 className="text-lg font-semibold text-black mb-3">{title}</h3>
+    const getBadgeVariant = () => {
+      if (connection.status === 'connected') return 'default';
+      if (connection.status === 'error') return 'destructive';
+      return 'secondary';
+    };
 
-        <div className="space-y-3">
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">{title}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div
@@ -57,90 +66,85 @@ export function DualConnectionStatus({
                   connection.status === 'connected' ? 'animate-pulse' : ''
                 }`}
               />
-              <span className="text-sm font-semibold text-black">
+              <Badge variant={getBadgeVariant()}>
                 {statusLabels[connection.status]}
-              </span>
+              </Badge>
             </div>
             {isConnected ? (
-              <button
-                onClick={onDisconnect}
-                className="px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-              >
+              <Button size="sm" variant="destructive" onClick={onDisconnect}>
                 Disconnect
-              </button>
+              </Button>
             ) : (
-              <button
-                onClick={onReconnect}
-                className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-              >
+              <Button size="sm" onClick={onReconnect}>
                 Reconnect
-              </button>
+              </Button>
             )}
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <p className="text-xs text-black">Uptime</p>
-              <p className="text-sm font-semibold text-black">{connection.uptime}s</p>
+              <p className="text-xs text-gray-500">Uptime</p>
+              <p className="text-sm font-semibold">{connection.uptime}s</p>
             </div>
             {connection.lastMessageTime && (
               <div>
-                <p className="text-xs text-black">Last Message</p>
-                <p className="text-xs text-black">
+                <p className="text-xs text-gray-500">Last Message</p>
+                <p className="text-xs">
                   {new Date(connection.lastMessageTime).toLocaleTimeString()}
                 </p>
               </div>
             )}
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     );
   };
 
   return (
-    <div className="bg-white rounded-lg border p-6">
-      <h2 className="text-xl font-bold text-black mb-4">Connection Status</h2>
+    <Card>
+      <CardHeader>
+        <CardTitle>Connection Status</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {renderConnectionCard(
+            'PI Financial',
+            piFinancialConnection,
+            isConnectedPI,
+            onReconnectPI,
+            onDisconnectPI
+          )}
+          {renderConnectionCard(
+            'Finnhub',
+            finnhubConnection,
+            isConnectedPrixe,
+            onReconnectPrixe,
+            onDisconnectPrixe
+          )}
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        {renderConnectionCard(
-          'PI Financial',
-          piFinancialConnection,
-          isConnectedPI,
-          onReconnectPI,
-          onDisconnectPI,
-          'bg-blue-50'
-        )}
-        {renderConnectionCard(
-          'Finnhub',
-          finnhubConnection,
-          isConnectedPrixe,
-          onReconnectPrixe,
-          onDisconnectPrixe,
-          'bg-purple-50'
-        )}
-      </div>
-
-      <div className="pt-4 border-t">
-        <h3 className="text-sm font-semibold text-black mb-2">Overall Statistics</h3>
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <p className="text-xs text-black">Total Messages</p>
-            <p className="text-lg font-bold text-black">{stats.totalMessages}</p>
-          </div>
-          <div>
-            <p className="text-xs text-black">Avg Latency</p>
-            <p className="text-lg font-bold text-black">
-              {stats.averageLatency > 0 ? `${stats.averageLatency.toFixed(0)}ms` : 'N/A'}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-black">Active Sources</p>
-            <p className="text-lg font-bold text-black">
-              {(isConnectedPI ? 1 : 0) + (isConnectedPrixe ? 1 : 0)}/2
-            </p>
+        <div className="pt-4 border-t">
+          <h3 className="text-sm font-semibold mb-3">Overall Statistics</h3>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <p className="text-xs text-gray-500">Total Messages</p>
+              <p className="text-lg font-bold">{stats.totalMessages}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Avg Latency</p>
+              <p className="text-lg font-bold">
+                {stats.averageLatency > 0 ? `${stats.averageLatency.toFixed(0)}ms` : 'N/A'}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Active Sources</p>
+              <p className="text-lg font-bold">
+                {(isConnectedPI ? 1 : 0) + (isConnectedPrixe ? 1 : 0)}/2
+              </p>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

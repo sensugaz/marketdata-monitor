@@ -21,6 +21,12 @@ interface MarketStore {
   addSymbol: (symbol: SymbolParam) => void;
   removeSymbol: (symbol: string) => void;
   setWatchedSymbols: (symbols: SymbolParam[]) => void;
+  instrumentsLoaded: boolean;
+  setInstrumentsLoaded: (loaded: boolean) => void;
+
+  // Displayed symbols (for incremental subscription)
+  displayedSymbols: SymbolParam[];
+  setDisplayedSymbols: (symbols: SymbolParam[]) => void;
 
   // WebSocket logs
   logs: LogEntry[];
@@ -68,14 +74,9 @@ export const useMarketStore = create<MarketStore>((set, get) => ({
     uptime: 0,
     url: 'wss://marketdata.prod.pi.financial/marketdata-migrationproxy/market-data/streaming',
   },
-  watchedSymbols: [
-    // { symbol: 'AAPL', market: 'NASDAQ' },
-    // { symbol: 'TSLA', market: 'NASDAQ' },
-    // { symbol: 'GOOG', market: 'NASDAQ' },
-    // { symbol: 'MSFT', market: 'NASDAQ' },
-    // { symbol: 'AMZN', market: 'NASDAQ' },
-
-  ],
+  watchedSymbols: [],
+  instrumentsLoaded: false,
+  displayedSymbols: [],
   logs: [],
   stats: {
     totalMessages: 0,
@@ -153,6 +154,10 @@ export const useMarketStore = create<MarketStore>((set, get) => ({
       return { watchedSymbols: symbols };
     }),
 
+  setInstrumentsLoaded: (loaded) => set({ instrumentsLoaded: loaded }),
+
+  setDisplayedSymbols: (symbols) => set({ displayedSymbols: symbols }),
+
   addLog: (log) =>
     set((state) => ({
       logs: [
@@ -162,7 +167,7 @@ export const useMarketStore = create<MarketStore>((set, get) => ({
           timestamp: Date.now(),
         },
         ...state.logs,
-      ].slice(0, 1000), // Keep only last 1000 logs
+      ].slice(0, 500), // Keep only last 500 logs to save memory
     })),
 
   clearLogs: () => set({ logs: [] }),
